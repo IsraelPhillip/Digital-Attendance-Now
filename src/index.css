@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ================= COMPONENTS ================= */
+@layer components {
+  .auth-card {
+    @apply w-full max-w-sm bg-white border border-gray-200 rounded-2xl p-6 shadow-lg;
+  }
+
+  .auth-input {
+    @apply w-full py-3 rounded-xl border border-gray-200 bg-white text-gray-900
+           placeholder:text-gray-400
+           focus:outline-none focus:ring-2 focus:ring-blue-600;
+  }
+
+  .sidebar-link {
+    @apply relative flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium transition-colors;
+  }
+
+  .sidebar-link-active {
+    @apply bg-primary text-primary-foreground;
+  }
+
+  .sidebar-link-inactive {
+    @apply text-muted-foreground hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .table-header {
+    @apply text-xs uppercase tracking-wide text-muted-foreground bg-muted/30;
+  }
+
+  .stat-card {
+    @apply bg-card border border-border rounded-xl p-4 shadow-sm;
+  }
+
+  .page-container {
+    @apply flex-1 overflow-auto p-6 md:p-8 bg-background;
+  }
+}
+
+/* ================= UTILITIES ================= */
+@layer utilities {
+  .gradient-bg {
+    background: linear-gradient(135deg, #eff6ff, #eef2ff);
+  }
+}
+
+/* ================= QR SCANNER FIX (CRITICAL) ================= */
+
+/* Remove ALL default html5-qrcode UI */
+#qr-reader__dashboard,
+#qr-reader__header_message,
+#qr-reader__status_span,
+#qr-reader__camera_selection,
+#qr-reader__camera_permission_button,
+#qr-reader__scan_region > img,
+#qr-reader__scan_region > div {
+  display: none !important;
+}
+
+/* Remove default borders & overlays */
+#qr-reader__scan_region video {
+  border: none !important;
+  outline: none !important;
+}
+
+/* Ensure scanner fills container cleanly */
+#qr-reader {
+  width: 100% !important;
+  height: 100% !important;
+  position: relative;
+}
+
+/* ================= THEME ================= */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 47.4% 11.2%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 47.4% 11.2%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 221 83% 53%;
+  --primary: 221 83% 53%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 215 25% 27%;
+  --secondary-foreground: 210 40% 98%;
+  --accent: 210 40% 96%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+  --sidebar: 215 28% 17%;
+  --sidebar-border: 220 13% 25%;
+  --success: 142.1 70.6% 45.3%;
+  --warning: 38 92% 50%;
+  --radius: 0.5rem;
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
