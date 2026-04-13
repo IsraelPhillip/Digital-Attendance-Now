@@ -17,6 +17,14 @@ import {
   Search,
   ChevronRight
 } from "lucide-react";
+import { useLogout } from "../lib/useLogout";
+
+const handleLogout = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("userRole");
+  localStorage.removeItem("user");
+  window.location.href = "/landingHr";
+};
 
 const navItems = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -31,7 +39,6 @@ export default function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
   return (
     <div className="flex h-screen overflow-hidden bg-[#f8fafc] text-slate-900 font-sans">
       {/* 🌑 Mobile Overlay */}
@@ -103,13 +110,13 @@ export default function AppLayout() {
               <p className="text-[10px] text-slate-500 truncate">Super Administrator</p>
             </div>
           </div>
-          <button
-            onClick={() => navigate("/landingHr")}
-            className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-bold text-red-400 bg-red-500/5 hover:bg-red-500/10 transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-            Sign Out
-          </button>
+         <button
+  onClick={handleLogout}
+  className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-bold text-red-400 bg-red-500/5 hover:bg-red-500/10 transition-colors"
+>
+  <LogOut className="w-5 h-5" />
+  Sign Out
+</button>
         </div>
       </aside>
 

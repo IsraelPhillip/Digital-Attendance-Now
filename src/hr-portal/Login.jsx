@@ -7,6 +7,9 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/Input";
 import { Label } from "../components/ui/Label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
+import { useAuthContext } from "../lib/AuthContext";
+
+
 
 export default function Login() {
   const navigate = useNavigate();
@@ -14,10 +17,14 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-const [success, setSuccess] = useState("");
+  const [success, setSuccess] = useState("");
 
- const handleLogin = async (e) => {
+  const { setAuthState } = useAuthContext();
+
+const handleLogin = async (e) => {
   e.preventDefault();
+
+  if (loading) return;
 
   setError("");
   setSuccess("");
@@ -32,32 +39,63 @@ const [success, setSuccess] = useState("");
   try {
     const res = await axios.post(
       `${import.meta.env.VITE_API_URL}/hrLogin`,
-      {
-        email,
-        password,
-      },
-      {
-        withCredentials: true,
-      }
+      { email, password },
+      { withCredentials: true }
     );
 
-    if (res.data.success) {
-      setSuccess(res.data.message || "Login successful");
+    const data = res.data;
 
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 1000);
-    } else {
-      setError(res.data.message || "Login failed");
+    console.log("✅ HR LOGIN RESPONSE:", data);
+
+    // ✅ Check success FIRST
+    if (!data.success) {
+      setError(data.message || "Login failed");
+      return;
     }
+
+    // ✅ Extract token safely
+    const token =
+      data.token ||
+      data.accessToken ||
+      data.access_token ||
+      data.jwt ||
+      "temp-token"; // fallback (only for testing)
+
+    // ✅ Build user
+    const userData = {
+      email: data.email || email,
+      name: data.name || "HR Admin",
+      userId: data.userId || null,
+    };
+
+    // ✅ Save
+    localStorage.setItem("token", token);
+    localStorage.setItem("userRole", "hr");
+    localStorage.setItem("user", JSON.stringify(userData));
+
+    // ✅ Sync context
+    setAuthState({
+      isAuthenticated: true,
+      token,
+      userRole: "hr",
+      user: userData,
+      loading: false,
+    });
+
+    setSuccess(data.message || "Login successful");
+
+    // ✅ Navigate immediately (no delay needed)
+    navigate("/dashboard", { replace: true });
+
   } catch (err) {
-    if (err.response) {
-      setError(err.response.data.message || "Login failed");
-    } else if (err.request) {
-      setError("Network error. Check server connection.");
-    } else {
-      setError("Something went wrong.");
-    }
+    const message =
+      err.response?.data?.message ||
+      err.response?.data?.error ||
+      (err.request && "Network error. Check server connection.") ||
+      err.message ||
+      "Something went wrong.";
+
+    setError(message);
   } finally {
     setLoading(false);
   }
@@ -65,13 +103,10 @@ const [success, setSuccess] = useState("");
 
   return (
     <div className="relative min-h-screen bg-slate-950 flex items-center justify-center px-4 overflow-hidden font-sans">
-      
-      {/* Atmospheric Background */}
       <div className="absolute inset-0 z-0">
         <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px]" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/10 rounded-full blur-[120px]" />
-        <div className="absolute inset-0 bg-[url('https://shared.jasonet.co/grid.svg')] opacity-10" />
-      </div>
+<div className="absolute inset-0 bg-[radial-gradient(circle,#ffffff0f_1px,transparent_1px)] [background-size:20px_20px]" />      </div>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -79,10 +114,9 @@ const [success, setSuccess] = useState("");
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="relative z-10 w-full max-w-[440px]"
       >
-        {/* Logo & Header Section */}
         <div className="flex flex-col items-center mb-8">
           <Link to="/landingHr" className="group">
-            <motion.div 
+            <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-2xl shadow-blue-500/20 mb-4"
@@ -94,7 +128,6 @@ const [success, setSuccess] = useState("");
           <p className="text-slate-400 text-sm mt-1">Authorized Personnel Only</p>
         </div>
 
-        {/* Glassmorphic Login Card */}
         <Card className="bg-slate-900/40 backdrop-blur-xl border-white/10 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] rounded-[2rem] overflow-hidden">
           <CardHeader className="pt-8 pb-4 text-center">
             <div className="mx-auto w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center mb-2">
@@ -112,8 +145,6 @@ const [success, setSuccess] = useState("");
 
           <CardContent className="pb-8">
             <form onSubmit={handleLogin} className="space-y-5">
-
-              {/* Email */}
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-slate-300 ml-1">
                   Work Email
@@ -132,7 +163,6 @@ const [success, setSuccess] = useState("");
                 </div>
               </div>
 
-              {/* Password */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between ml-1">
                   <Label htmlFor="password" className="text-slate-300">
@@ -156,18 +186,19 @@ const [success, setSuccess] = useState("");
               <button type="button" className="text-xs text-blue-400 hover:underline">
                 Forgot Password?
               </button>
-{error && (
-  <p className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
-    {error}
-  </p>
-)}
 
-{success && (
-  <p className="text-green-400 text-sm bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2">
-    {success}
-  </p>
-)}
-              {/* Button */}
+              {error && (
+                <p className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                  {error}
+                </p>
+              )}
+
+              {success && (
+                <p className="text-green-400 text-sm bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2">
+                  {success}
+                </p>
+              )}
+
               <Button
                 type="submit"
                 className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-6 rounded-xl shadow-lg shadow-blue-600/20 transition-all active:scale-[0.98]"
@@ -192,7 +223,6 @@ const [success, setSuccess] = useState("");
               </Button>
             </form>
 
-            {/* Back */}
             <div className="mt-8 pt-6 border-t border-white/5 text-center">
               <Link
                 to="/landingHr"
@@ -204,7 +234,6 @@ const [success, setSuccess] = useState("");
           </CardContent>
         </Card>
 
-        {/* Footer */}
         <p className="mt-8 text-center text-slate-600 text-[10px] uppercase tracking-[0.2em]">
           Protected by AES-256 Encryption • Attendee Security
         </p>

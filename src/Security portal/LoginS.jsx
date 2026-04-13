@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Shield, Lock, QrCode } from "lucide-react";
 import securityBg from "@/assets/security-bg.jpg";
+import { useAuthContext } from "../lib/AuthContext";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -23,51 +24,84 @@ const SecurityLogin = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const handleSubmit = async (e) => {
-    
-    if (!securityId || !password) {
-  setError("Security ID and password are required");
-  return;
-}
-    e.preventDefault();
-    setError("");
-    setSuccess("");
+ const { setAuthState } = useAuthContext();
 
-    try {
-      const { data } = await axios.post(
-        `${import.meta.env.VITE_API_URL}/securityLogin`,
-        { securityId, password },
-        { withCredentials: true }
-      );
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-      if (data.changePassword) {
-        setSuccess(data.message);
-        setTimeout(() => navigate("/password-change"), 1200);
+  if (!securityId || !password) {
+    setError("Security ID and password are required");
+    return;
+  }
+
+  setError("");
+  setSuccess("");
+
+  try {
+    const { data } = await axios.post(
+      `${import.meta.env.VITE_API_URL}/securityLogin`,
+      { securityId, password },
+      { withCredentials: true }
+    );
+
+    // ✅ Password change check (KEEP THIS)
+    if (data.changePassword) {
+      setSuccess(data.message);
+      setTimeout(() => navigate("/password-change"), 1200);
+      return;
+    }
+
+    // ✅ MAIN LOGIN BLOCK (ONLY ONE)
+    if (data.success === true) {
+      if (!data.token) {
+        setError("Login failed: No token received from server");
         return;
       }
 
-      if (data.success === true) {
-        setSuccess(data.message || "Login successful");
-        setTimeout(() => navigate("/scan-page"), 1000);
-      }
-   } catch (err) {
-  if (err.response?.data?.message) {
-    // Server responded with error
-    setError(err.response.data.message);
+      // ✅ Prepare user data
+      const userData = {
+        securityId: data.securityId || securityId,
+        name: data.name || "Security Officer",
+      };
 
-  } else if (err.request) {
-    // Request made but no response (Network issue)
-    setError("Network error! Please check your internet connection.");
+      // ✅ Store in localStorage
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("userRole", "security");
+      localStorage.setItem("user", JSON.stringify(userData));
 
-  } else if (err.message) {
-    // Other errors
-    setError(err.message);
+      // 🔥 IMPORTANT FIX (does NOT affect errors)
+      setAuthState({
+        isAuthenticated: true,
+        token: data.token,
+        userRole: "security",
+        user: userData,
+        loading: false,
+      });
 
-  } else {
-    setError("Login failed. Please try again.");
+      setSuccess(data.message || "Login successful");
+
+      setTimeout(() => {
+        navigate("/scan-page", { replace: true });
+      }, 1000);
+
+    } else {
+      // ✅ KEEP YOUR BACKEND ERRORS
+      setError(data.message || "Login failed");
+    }
+
+  } catch (err) {
+    // ✅ KEEP ALL YOUR DETAILED ERRORS (UNCHANGED)
+    if (err.response?.data?.message) {
+      setError(err.response.data.message);
+    } else if (err.request) {
+      setError("Network error! Please check your internet connection.");
+    } else if (err.message) {
+      setError(err.message);
+    } else {
+      setError("Login failed. Please try again.");
+    }
   }
-}
-  };
+};
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden flex items-center justify-center">
@@ -99,28 +133,6 @@ const SecurityLogin = () => {
           SECURITY LOGIN
         </motion.h1>
 
-        {/* 🔴 Error Message 
-        {error && (
-          <motion.p
-            variants={fadeUp}
-            custom={1.5}
-            className="mb-3 text-sm text-red-400 text-center font-medium"
-          >
-            {error}
-          </motion.p>
-        )}
-*/}
-        {/* 🟢 Success Message 
-        {success && (
-          <motion.p
-            variants={fadeUp}
-            custom={1.5}
-            className="mb-3 text-sm text-green-400 text-center font-medium"
-          >
-            {success}
-          </motion.p>
-        )}*/}
-
         <motion.form
           variants={fadeUp}
           custom={2}
@@ -134,7 +146,10 @@ const SecurityLogin = () => {
               placeholder="SECURITY ID"
               className="w-full h-14 rounded-full bg-white text-foreground pl-14 pr-6 text-sm font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
               value={securityId}
-              onChange={(e) => setSecurityId(e.target.value)}
+              onChange={(e) => {
+                setSecurityId(e.target.value);
+                setError("");
+              }}
             />
           </div>
 
@@ -145,10 +160,33 @@ const SecurityLogin = () => {
               placeholder="Password"
               className="w-full h-14 rounded-full bg-white text-foreground pl-14 pr-6 text-sm font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError("");
+              }}
             />
           </div>
-{error && <p className="text-red-500">{error}</p>}
+
+          {error && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-red-500 text-sm font-medium"
+            >
+              {error}
+            </motion.p>
+          )}
+
+          {success && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-green-500 text-sm font-medium"
+            >
+              {success}
+            </motion.p>
+          )}
+
           <motion.button
             type="submit"
             whileHover={{ scale: 1.02 }}
