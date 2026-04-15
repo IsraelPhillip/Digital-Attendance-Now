@@ -2,8 +2,8 @@ import { Loader2 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { useProtectedRoute } from "../lib/useProtectedRoute";
 
-export function ProtectedRoute({ children, role = null }) {
-  const { loading, isAuthenticated } = useProtectedRoute(role);
+export function ProtectedRoute({ children, requiredRole = null }) {
+  const { loading, isAuthenticated } = useProtectedRoute(requiredRole);
 
   if (loading) {
     return (
@@ -13,7 +13,6 @@ export function ProtectedRoute({ children, role = null }) {
     );
   }
 
-  // ✅ REDIRECT instead of null
   if (!isAuthenticated) {
     return <Navigate to="/" replace />;
   }

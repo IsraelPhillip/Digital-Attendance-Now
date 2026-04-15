@@ -5,9 +5,6 @@ import { motion } from "framer-motion";
 import { QrCode, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import Background from "../assets/login-bg.jpg";
 import { useAuthContext } from "../lib/AuthContext";
-
-
-
 // ✅ Ensure cookies are always sent
 axios.defaults.withCredentials = true;
 
@@ -83,14 +80,11 @@ const LoginPage = () => {
     console.log("✅ Token stored:", token);
 
     // 🔥 FIX (this is what you were missing)
-    setAuthState({
+   setAuthState({
   isAuthenticated: true,
-  token: null, // 🔥 no token needed
+  token: token, // ✅ FIXED
   userRole: "staff",
-  user: {
-    email,
-    name: "Staff Member",
-  },
+  user: userData,
   loading: false,
 });
 

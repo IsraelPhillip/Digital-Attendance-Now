@@ -203,10 +203,10 @@ const handleSubmit = async (e) => {
           className="text-xs text-white/60 mt-8"
         >
           <Link
-            to="/password-change"
-            className="text-white/80 hover:text-white hover:underline transition-colors"
+           to="/change-password"
+            className="text-blue-400 hover:text-white transition-colors"
           >
-            Change Password
+            New security Personnel?<span className="text-white/90 ml-2 hover:underline "> Change Password</span>
           </Link>
         </motion.p>
       </motion.div>

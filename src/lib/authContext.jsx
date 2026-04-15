@@ -12,7 +12,7 @@ export function AuthProvider({ children }) {
   });
 
   useEffect(() => {
-    // Check auth on mount
+  const syncAuth = () => {
     const token = localStorage.getItem("token");
     const userRole = localStorage.getItem("userRole");
     const user = localStorage.getItem("user");
@@ -34,27 +34,18 @@ export function AuthProvider({ children }) {
         loading: false,
       });
     }
+  };
 
-    // Monitor storage changes (logout from other tabs)
-    const handleStorageChange = () => {
-      const newToken = localStorage.getItem("token");
-      if (!newToken && authState.isAuthenticated) {
-        setAuthState({
-          isAuthenticated: false,
-          token: null,
-          userRole: null,
-          user: null,
-          loading: false,
-        });
-      }
-    };
+  syncAuth();
 
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
+  window.addEventListener("storage", syncAuth);
+  return () => window.removeEventListener("storage", syncAuth);
+}, []);
 
   return (
-    <AuthContext.Provider value={{ ...authState, setAuthState }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ ...authState, setAuthState }}>
+      {children}
+    </AuthContext.Provider>
   );
 }
 

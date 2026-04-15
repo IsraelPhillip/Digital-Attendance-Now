@@ -1,8 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { Routes, Route, Navigate } from "react-router-dom"; // ❌ removed BrowserRouter
-import { Loader2 } from "lucide-react";
+import { Routes, Route, Navigate } from "react-router-dom";
 
-// ========== STAFF PORTAL ==========
+// STAFF
 import LandingPage from "./staff portal/LandingPage";
 import RegisterPage from "./staff portal/RegisterPage";
 import StaffQRpage from "./staff portal/StaffQRpage";
@@ -10,14 +8,14 @@ import ForgotPassword from "./staff portal/ForgotPassword";
 import ResetPassword from "./staff portal/ResetPassword";
 import LoginPage from "./staff portal/LoginPage";
 
-// ========== SECURITY PORTAL ==========
+// SECURITY
 import ClockinFailed from "./Security portal/ClockinFailed";
 import ScanPage from "./Security portal/ScanPage";
 import ClockinSuccess from "./Security portal/ClockinSuccess";
 import LoginS from "./Security portal/LoginS";
 import ChangePassword from "./Security portal/changePassword";
 
-// ========== HR PORTAL ==========
+// HR
 import Dashboard from "./hr-portal/Dashboard";
 import Employees from "./hr-portal/Employees";
 import Attendance from "./hr-portal/Attendance";
@@ -28,61 +26,12 @@ import Landing from "./hr-portal/Landing";
 import Login from "./hr-portal/Login";
 import AppLayout from "./components/AppLayout";
 
-
-// ... all your imports remain the same
-
-// ========== PROTECTED ROUTE COMPONENT ==========
-function ProtectedRoute({ children, requiredRole }) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthorized, setIsAuthorized] = useState(false);
-
-  useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem("token");
-      const userRole = localStorage.getItem("userRole");
-
-      if (!token || !userRole) {
-        setIsAuthorized(false);
-        setIsLoading(false);
-        return;
-      }
-
-      if (requiredRole && userRole !== requiredRole) {
-        setIsAuthorized(false);
-        setIsLoading(false);
-        return;
-      }
-
-      setIsAuthorized(true);
-      setIsLoading(false);
-    };
-
-    checkAuth();
-  }, [requiredRole]);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-slate-50">
-        <div className="text-center space-y-4">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto" />
-          <p className="text-slate-600 font-semibold">Verifying access...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthorized) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return children;
-}
+// ✅ IMPORT ONLY
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const App = () => {
   return (
-    <Routes> {/* ✅ NO BrowserRouter here */}
-      {/* ALL YOUR ROUTES STAY EXACTLY THE SAME */}
-
+    <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
@@ -92,7 +41,9 @@ const App = () => {
       <Route path="/security-login" element={<LoginS />} />
       <Route path="/landingHr" element={<Landing />} />
       <Route path="/loginHr" element={<Login />} />
+      <Route path="/change-password" element={<ChangePassword />} />
 
+      {/* STAFF */}
       <Route
         path="/staffQR"
         element={
@@ -102,15 +53,7 @@ const App = () => {
         }
       />
 
-      <Route
-        path="/password-change"
-        element={
-          <ProtectedRoute requiredRole="security">
-            <ChangePassword />
-          </ProtectedRoute>
-        }
-      />
-
+      {/* SECURITY */}
       <Route
         path="/scan-page"
         element={
@@ -138,6 +81,7 @@ const App = () => {
         }
       />
 
+      {/* HR */}
       <Route
         element={
           <ProtectedRoute requiredRole="hr">
@@ -153,7 +97,7 @@ const App = () => {
         <Route path="/reports" element={<Reports />} />
       </Route>
 
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };

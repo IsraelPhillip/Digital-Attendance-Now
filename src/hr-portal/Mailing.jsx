@@ -13,7 +13,6 @@ export default function Mailing() {
   const [loading, setLoading] = useState(false);
   const [employees, setEmployees] = useState([]);
 
-  // Mode states
   const [isBulkMode, setIsBulkMode] = useState(false);
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
@@ -35,7 +34,10 @@ export default function Mailing() {
         const data = await res.json();
 
         if (data.success) {
-          setEmployees(data.staff);
+          const validStaff = data.staff.filter(
+            (emp) => emp.id !== undefined && emp.id !== null
+          );
+          setEmployees(validStaff);
         } else {
           toast.error("Failed to load staff");
         }
@@ -53,45 +55,35 @@ export default function Mailing() {
     const q = query.toLowerCase();
 
     return employees
-      .filter((e) => {
-        return (
+      .filter(
+        (e) =>
           e.name?.toLowerCase().includes(q) ||
           e.id?.toString().toLowerCase().includes(q) ||
           e.email?.toLowerCase().includes(q)
-        );
-      })
+      )
       .slice(0, 8);
   }, [query, employees]);
 
-  // Get selected employees array from Set
   const selectedEmployeesArray = useMemo(() => {
-    return employees.filter(e => selectedMultiple.has(e.id));
+    return employees.filter((e) => selectedMultiple.has(e.id));
   }, [selectedMultiple, employees]);
 
-  // Toggle single employee selection
   const toggleEmployeeSelection = (empId) => {
     const newSet = new Set(selectedMultiple);
-    if (newSet.has(empId)) {
-      newSet.delete(empId);
-    } else {
-      newSet.add(empId);
-    }
+    newSet.has(empId) ? newSet.delete(empId) : newSet.add(empId);
     setSelectedMultiple(newSet);
   };
 
-  // Toggle select all
   const handleSelectAll = () => {
     if (selectAll) {
       setSelectedMultiple(new Set());
       setSelectAll(false);
     } else {
-      const allIds = new Set(employees.map(e => e.id));
-      setSelectedMultiple(allIds);
+      setSelectedMultiple(new Set(employees.map((e) => e.id)));
       setSelectAll(true);
     }
   };
 
-  // Remove single employee from selection
   const removeFromSelection = (empId) => {
     const newSet = new Set(selectedMultiple);
     newSet.delete(empId);
@@ -99,156 +91,162 @@ export default function Mailing() {
     setSelectAll(false);
   };
 
-  // Clear all selections
   const clearAllSelections = () => {
     setSelectedMultiple(new Set());
     setSelectAll(false);
   };
 
-  // Handle single recipient send
   const handleSendSingle = async () => {
-    if (!selectedEmployee)
-      return toast.error("Please select an employee");
-    if (!subject.trim())
-      return toast.error("Please enter a subject");
-    if (!message.trim())
-      return toast.error("Please enter a message");
+    if (!selectedEmployee) return toast.error("Please select an employee");
+    if (!subject.trim()) return toast.error("Please enter a subject");
+    if (!message.trim()) return toast.error("Please enter a message");
 
     try {
       setLoading(true);
 
       const res = await fetch(`${import.meta.env.VITE_API_URL}/mailToStaff`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+     body: JSON.stringify({
+  staffId: Number(selectedEmployee.id), // ✅ FIXED
+  subject,
+  message,
+}),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message);
+
+      toast.success(data.message || "Mail sent successfully");
+
+      setSubject("");
+      setMessage("");
+      setSelectedEmployee(null);
+      setQuery("");
+      setShowDropdown(false);
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendMultiple = () => {
+    if (selectedMultiple.size === 0)
+      return toast.error("Please select at least one employee");
+    if (!subject.trim()) return toast.error("Please enter a subject");
+    if (!message.trim()) return toast.error("Please enter a message");
+
+    setShowBulkConfirm(true);
+  };
+
+  const handleBulkSend = () => {
+    if (!subject.trim()) return toast.error("Please enter a subject");
+    if (!message.trim()) return toast.error("Please enter a message");
+
+    setShowBulkConfirm(true);
+  };
+
+  const confirmAndSend = async () => {
+  try {
+    setLoading(true);
+
+    if (isBulkMode) {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/personalizedMail`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          staffId: selectedEmployee.id,
           subject,
           message,
         }),
       });
-      const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to send mail");
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error("Invalid server response");
       }
+
+      if (!res.ok) throw new Error(data.message);
+
+      toast.success(data.message || "Mail sent to all staff");
+
+    } else if (isMultiSelectMode) {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/mailToMultipleStaffs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          staffIds: Array.from(selectedMultiple).map(Number), // ✅ FIXED
+          subject,
+          message,
+        }),
+      });
+
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error("Invalid server response");
+      }
+
+      if (!res.ok) throw new Error(data.message);
+
+      toast.success(data.message || `Mail sent to ${selectedMultiple.size} staff`);
+
+    } else {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/mailToStaff`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          staffId: Number(selectedEmployee.id), // ✅ FIXED
+          subject,
+          message,
+        }),
+      });
+
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error("Invalid server response");
+      }
+
+      if (!res.ok) throw new Error(data.message);
 
       toast.success(data.message || "Mail sent successfully");
-
-      // Reset form
-      setSubject("");
-      setMessage("");
-      setSelectedEmployee(null);
-      setQuery("");
-      setShowDropdown(false);
-    } catch (error) {
-      toast.error(error.message);
-    } finally {
-      setLoading(false);
     }
-  };
 
-  // Handle multi-select send
-  const handleSendMultiple = async () => {
-    if (selectedMultiple.size === 0)
-      return toast.error("Please select at least one employee");
-    if (!subject.trim())
-      return toast.error("Please enter a subject");
-    if (!message.trim())
-      return toast.error("Please enter a message");
+    // reset
+    setSubject("");
+    setMessage("");
+    setSelectedEmployee(null);
+    setSelectedMultiple(new Set());
+    setSelectAll(false);
+    setIsMultiSelectMode(false);
+    setIsBulkMode(false);
+    setQuery("");
+    setShowDropdown(false);
+    setShowBulkConfirm(false);
 
-    setShowBulkConfirm(true);
-  };
+  } catch (error) {
+    console.error("SEND ERROR:", error);
+    toast.error(error.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
-  // Handle bulk send (all staff)
-  const handleBulkSend = async () => {
-    if (!subject.trim())
-      return toast.error("Please enter a subject");
-    if (!message.trim())
-      return toast.error("Please enter a message");
-
-    setShowBulkConfirm(true);
-  };
-
-  // Confirm and send to selected/all
-  const confirmAndSend = async () => {
-    try {
-      setLoading(true);
-      setShowBulkConfirm(false);
-
-      const staffIds = isBulkMode
-        ? employees.map(e => e.id)
-        : Array.from(selectedMultiple);
-
-      const endpoint = isBulkMode || isMultiSelectMode
-        ? `${import.meta.env.VITE_API_URL}/bulkMailToStaff`
-        : `${import.meta.env.VITE_API_URL}/mailToStaff`;
-
-      const body = isBulkMode || isMultiSelectMode
-        ? {
-            subject,
-            message,
-            staffIds,
-          }
-        : {
-            staffId: selectedEmployee.id,
-            subject,
-            message,
-          };
-
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to send mail");
-      }
-
-      const recipientCount = isBulkMode
-        ? employees.length
-        : selectedMultiple.size;
-
-      toast.success(
-        data.message ||
-        `Mail sent to ${recipientCount} staff member${recipientCount > 1 ? "s" : ""}`
-      );
-
-      // Reset form
-      setSubject("");
-      setMessage("");
-      setSelectedEmployee(null);
-      setSelectedMultiple(new Set());
-      setSelectAll(false);
-      setIsMultiSelectMode(false);
-      setIsBulkMode(false);
-      setQuery("");
-      setShowDropdown(false);
-    } catch (error) {
-      toast.error(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle send based on mode
   const handleSend = () => {
-    if (isBulkMode) {
-      handleBulkSend();
-    } else if (isMultiSelectMode) {
-      handleSendMultiple();
-    } else {
-      handleSendSingle();
-    }
+    if (isBulkMode) handleBulkSend();
+    else if (isMultiSelectMode) handleSendMultiple();
+    else handleSendSingle();
   };
-
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-10">
       {/* HEADER */}
@@ -274,6 +272,9 @@ export default function Mailing() {
           onClick={() => {
             setIsBulkMode(false);
             setIsMultiSelectMode(false);
+            setSelectedEmployee(null);
+            setSelectedMultiple(new Set());
+            setSelectAll(false);
           }}
           className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase transition-all ${
             !isBulkMode && !isMultiSelectMode
@@ -289,9 +290,9 @@ export default function Mailing() {
           onClick={() => {
             setIsMultiSelectMode(!isMultiSelectMode);
             setIsBulkMode(false);
-            if (!isMultiSelectMode) {
-              setSelectedEmployee(null);
-            }
+            setSelectedEmployee(null);
+            setSelectedMultiple(new Set());
+            setSelectAll(false);
           }}
           className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase transition-all ${
             isMultiSelectMode
@@ -307,11 +308,9 @@ export default function Mailing() {
           onClick={() => {
             setIsBulkMode(!isBulkMode);
             setIsMultiSelectMode(false);
-            if (!isBulkMode) {
-              setSelectedEmployee(null);
-              setSelectedMultiple(new Set());
-              setSelectAll(false);
-            }
+            setSelectedEmployee(null);
+            setSelectedMultiple(new Set());
+            setSelectAll(false);
           }}
           className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase transition-all ${
             isBulkMode
@@ -369,29 +368,35 @@ export default function Mailing() {
 
                 {/* DROPDOWN */}
                 <AnimatePresence>
-                  {showDropdown && results.length > 0 && (
+                  {showDropdown && (
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 10 }}
                       className="absolute z-50 w-full bg-white border rounded-2xl mt-2 shadow-lg max-h-64 overflow-auto"
                     >
-                      {results.map((emp) => (
-                        <button
-                          key={emp.id}
-                          onClick={() => {
-                            setSelectedEmployee(emp);
-                            setShowDropdown(false);
-                            setQuery("");
-                          }}
-                          className="w-full px-4 py-3 text-left hover:bg-slate-50"
-                        >
-                          <p className="font-bold">{emp.name}</p>
-                          <p className="text-xs text-slate-400">
-                            {emp.email}
-                          </p>
-                        </button>
-                      ))}
+                      {results.length > 0 ? (
+                        results.map((emp) => (
+                          <button
+                            key={`emp-${emp.id}`}
+                            onClick={() => {
+                              setSelectedEmployee(emp);
+                              setShowDropdown(false);
+                              setQuery("");
+                            }}
+                            className="w-full px-4 py-3 text-left hover:bg-slate-50"
+                          >
+                            <p className="font-bold">{emp.name}</p>
+                            <p className="text-xs text-slate-400">
+                              {emp.email}
+                            </p>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="p-4 text-center text-slate-400 text-sm">
+                          No employees found
+                        </div>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -435,7 +440,7 @@ export default function Mailing() {
             <div className="max-h-64 overflow-y-auto border rounded-2xl divide-y bg-slate-50">
               {(query ? results : employees).map((emp) => (
                 <div
-                  key={emp.id}
+                  key={`emp-${emp.id}`}
                   className="flex items-center gap-3 p-4 hover:bg-white transition-colors"
                 >
                   <input
@@ -473,7 +478,7 @@ export default function Mailing() {
                 <div className="flex flex-wrap gap-2 p-3 bg-blue-50 rounded-2xl border border-blue-200">
                   {selectedEmployeesArray.map((emp) => (
                     <motion.div
-                      key={emp.id}
+                      key={`emp-${emp.id}`}
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.8 }}
@@ -584,7 +589,7 @@ export default function Mailing() {
                   <p className="text-xs font-bold text-slate-600 mb-2">Recipients:</p>
                   <div className="space-y-1">
                     {selectedEmployeesArray.map((emp) => (
-                      <p key={emp.id} className="text-xs text-slate-700">
+                      <p key={`emp-${emp.id}`} className="text-xs text-slate-700">
                         • {emp.name}
                       </p>
                     ))}
