@@ -11,7 +11,7 @@ import LoginPage from "./staffPortal/LoginPage";
 // SECURITY
 import ClockinFailed from "./SecurityPortal/ClockinFailed";
 import ScanPage from "./SecurityPortal/ScanPage";
-import ClockinSuccess from "./SecurityPortal/ClockInSuccess";
+import ClockinSuccess from "./SecurityPortal/ClockinSuccess";
 import LoginS from "./SecurityPortal/LoginS";
 import ChangePassword from "./SecurityPortal/changePassword";
 
