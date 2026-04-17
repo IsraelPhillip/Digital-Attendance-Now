@@ -11,7 +11,7 @@ import LoginPage from "./staffPortal/LoginPage";
 // SECURITY
 import ClockinFailed from "./SecurityPortal/ClockinFailed";
 import ScanPage from "./SecurityPortal/ScanPage";
-import ClockinSuccess from "./SecurityPortal/ClockinSuccess";
+import ClockInSuccess from "./SecurityPortal/ClockInSuccess";
 import LoginS from "./SecurityPortal/LoginS";
 import ChangePassword from "./SecurityPortal/changePassword";
 
@@ -67,7 +67,7 @@ const App = () => {
         path="/clock"
         element={
           <ProtectedRoute requiredRole="security">
-            <ClockinSuccess />
+            <ClockInSuccess />
           </ProtectedRoute>
         }
       />
