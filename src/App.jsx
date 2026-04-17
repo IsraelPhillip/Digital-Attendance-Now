@@ -1,19 +1,19 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 
 // STAFF
-import LandingPage from "./staff portal/LandingPage";
-import RegisterPage from "./staff portal/RegisterPage";
-import StaffQRpage from "./staff portal/StaffQRpage";
-import ForgotPassword from "./staff portal/ForgotPassword";
-import ResetPassword from "./staff portal/ResetPassword";
-import LoginPage from "./staff portal/LoginPage";
+import LandingPage from "./staffPortal/LandingPage";
+import RegisterPage from "./staffPortal/RegisterPage";
+import StaffQRpage from "./staffPortal/StaffQRpage";
+import ForgotPassword from "./staffPortal/ForgotPassword";
+import ResetPassword from "./staffPortal/ResetPassword";
+import LoginPage from "./staffPortal/LoginPage";
 
 // SECURITY
-import ClockinFailed from "./Security portal/ClockinFailed";
-import ScanPage from "./Security portal/ScanPage";
-import ClockinSuccess from "./Security portal/ClockinSuccess";
-import LoginS from "./Security portal/LoginS";
-import ChangePassword from "./Security portal/changePassword";
+import ClockinFailed from "./SecurityPortal/ClockinFailed";
+import ScanPage from "./SecurityPortal/ScanPage";
+import ClockinSuccess from "./SecurityPortal/ClockinSuccess";
+import LoginS from "./SecurityPortal/LoginS";
+import ChangePassword from "./SecurityPortal/changePassword";
 
 // HR
 import Dashboard from "./hr-portal/Dashboard";
