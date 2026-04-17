@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Shield, Lock, QrCode } from "lucide-react";
 import securityBg from "@/assets/security-bg.jpg";
-import { useAuthContext } from "../lib/AuthContext";
+import { useAuthContext } from "../lib/authContext";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },

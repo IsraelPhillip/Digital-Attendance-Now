@@ -1,4 +1,4 @@
-import { useAuthContext } from "./AuthContext";
+import { useAuthContext } from "./authContext";
 
 export function useProtectedRoute(requiredRole = null) {
   const { isAuthenticated, userRole, loading } = useAuthContext();

@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { QrCode, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import Background from "../assets/login-bg.jpg";
-import { useAuthContext } from "../lib/AuthContext";
+import { useAuthContext } from "../lib/authContext";
 // ✅ Ensure cookies are always sent
 axios.defaults.withCredentials = true;
 
