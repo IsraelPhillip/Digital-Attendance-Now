@@ -1,4 +1,4 @@
-import axios from "axios";
+import api from "../api/axios";
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -74,8 +74,8 @@ const RegisterPage = () => {
     try {
       setLoading(true);
   
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/registerStaff`,
+      const response = await api.post(
+        "/registerStaff",
         {
           firstName,
           lastName,

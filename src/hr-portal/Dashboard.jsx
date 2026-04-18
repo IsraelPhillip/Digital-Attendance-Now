@@ -23,7 +23,8 @@ import {
   CartesianGrid
 } from "recharts";
 import StatCard from "../components/StatCard";
-import axios from "axios";
+import api from "../api/axios";
+
 
 export default function Dashboard() {
   const [employees, setEmployees] = useState([]);
@@ -35,77 +36,75 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showModal, setShowModal] = useState(false);
 
-  const baseURL = import.meta.env.VITE_API_URL;
+ // FETCH DATA
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const [staffRes, dailyRes, weeklyRes, rateRes, recentRes] =
+        await Promise.all([
+          api.get("/allStaffs"),
+          api.get("/dailyReports"),
+          api.get("/weeklyAttendance"),
+          api.get("/attendanceRate"),
+          api.get("/recentClockIns")
+        ]);
 
-  // FETCH DATA
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [staffRes, dailyRes, weeklyRes, rateRes, recentRes] =
-          await Promise.all([
-            axios.get(`${baseURL}/allStaffs`),
-            axios.get(`${baseURL}/dailyReports`),
-            axios.get(`${baseURL}/weeklyAttendance`),
-            axios.get(`${baseURL}/attendanceRate`),
-            axios.get(`${baseURL}/recentClockIns`)
-          ]);
+      setEmployees(staffRes.data.staff || []);
+      setAttendanceRecords(dailyRes.data.attendance || []);
 
-        setEmployees(staffRes.data.staff || []);
-        setAttendanceRecords(dailyRes.data.attendance || []);
+      const daysOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-        const daysOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+      setWeeklyData(
+        daysOrder.map((day) => ({
+          day,
+          present: weeklyRes.data.data?.[day] ?? 0
+        }))
+      );
 
-        setWeeklyData(
-          daysOrder.map((day) => ({
-            day,
-            present: weeklyRes.data.data?.[day] ?? 0
-          }))
-        );
+      setAttendanceRate(rateRes.data.attendanceRate || 0);
 
-        setAttendanceRate(rateRes.data.attendanceRate || 0);
+      setRecentClockIns(
+        (recentRes.data.data || []).map((item, index) => {
+          const date = item.timeIn ? new Date(item.timeIn) : null;
+          const valid = date && !isNaN(date.getTime());
 
-        setRecentClockIns(
-          (recentRes.data.data || []).map((item, index) => {
-            const date = item.timeIn ? new Date(item.timeIn) : null;
-            const valid = date && !isNaN(date.getTime());
-
-            const hour = valid
-              ? new Date(
-                  date.toLocaleString("en-US", {
-                    timeZone: "Africa/Lagos"
-                  })
-                ).getHours()
-              : null;
-
-            let status = "—";
-            if (hour !== null) {
-              status = hour >= 9 ? "Late" : "Early";
-            }
-
-            const formattedTime = valid
-              ? date.toLocaleTimeString("en-NG", {
-                  timeZone: "Africa/Lagos",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  hour12: true
+          const hour = valid
+            ? new Date(
+                date.toLocaleString("en-US", {
+                  timeZone: "Africa/Lagos"
                 })
-              : "--:--";
+              ).getHours()
+            : null;
 
-            return {
-              employeeId: item.employeeId || item.record || index,
-              employeeName: item.employeeName || item.name || "Unknown",
-              timeIn: formattedTime,
-              status
-            };
-          })
-        );
-      } catch (err) {
-        console.error(err);
-      }
-    };
+          let status = "—";
+          if (hour !== null) {
+            status = hour >= 9 ? "Late" : "Early";
+          }
 
-    fetchData();
-  }, []);
+          const formattedTime = valid
+            ? date.toLocaleTimeString("en-NG", {
+                timeZone: "Africa/Lagos",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true
+              })
+            : "--:--";
+
+          return {
+            employeeId: item.employeeId || item.record || index,
+            employeeName: item.employeeName || item.name || "Unknown",
+            timeIn: formattedTime,
+            status
+          };
+        })
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  fetchData();
+}, []);
 
   const todayRecords = useMemo(() => {
     if (!Array.isArray(attendanceRecords)) return [];

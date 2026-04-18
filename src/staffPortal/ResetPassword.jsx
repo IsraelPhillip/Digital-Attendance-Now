@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import Background from "../assets/land-bg.jpg";
-import axios from "axios";
+import api from "../api/axios";
 
 
 const fadeUp = {
@@ -32,8 +32,8 @@ const ResetPassword = () => {
       return;
     }
     try {
-      await axios.put(
-        `${import.meta.env.VITE_API_URL}/resetPassword/${token}`,
+      await api.put(
+        `/resetPassword/${token}`,
         { newPassword: password }
       );
       setMessage("Password reset successful. Redirecting to login...");

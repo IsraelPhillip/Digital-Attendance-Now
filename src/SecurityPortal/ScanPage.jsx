@@ -1,4 +1,4 @@
-import axios from "axios";
+import api from "../api/axios";
 import React, { useEffect, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { useNavigate } from "react-router-dom";
@@ -39,10 +39,9 @@ const ScanPage = () => {
             clearTimeout(timeoutId);
 
             try {
-              await axios.post(
-                `${import.meta.env.VITE_API_URL}/qrScan`,
+              await api.post(
+                "/qrScan",
                 { qrData: decodedText },
-                { withCredentials: true }
               );
 
               navigate("/clock");

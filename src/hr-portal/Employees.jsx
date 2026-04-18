@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import DataTable from "../components/DataTable";
 import { Users, Search, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import axios from "axios";
+import api from "../api/axios";
+
 
 export default function Employees() {
   const [employees, setEmployees] = useState([]);
@@ -31,19 +32,13 @@ export default function Employees() {
       try {
         setLoading(true);
 
-        const res = await axios.get(
-          `${import.meta.env.VITE_API_URL}/employeeList`,
-          {
-            params: {
-              page: pageNumber,
-              limit,
-              search: searchQueryParam,
-            },
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
+        const res = await api.get("/employeeList", {
+  params: {
+    page: pageNumber,
+    limit,
+    search: searchQueryParam,
+  },
+});
 
         const raw = res.data.data || [];
 
@@ -69,17 +64,10 @@ export default function Employees() {
     [entries, search]
   );
 
-  useEffect(() => {
+ useEffect(() => {
   const fetchAllEmployees = async () => {
     try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_API_URL}/allStaffs`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
+      const res = await api.get("/allStaffs");
 
       setAllEmployees(res.data.staff || []);
     } catch (err) {
@@ -89,7 +77,6 @@ export default function Employees() {
 
   fetchAllEmployees();
 }, []);
-
   useEffect(() => {
     fetchEmployees(1, entries, "");
   }, [entries]);

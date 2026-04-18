@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, QrCode, Lock, ArrowLeft, Loader2, ShieldCheck } from "lucide-react";
-import axios from "axios";
+import api from "../api/axios";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/Input";
 import { Label } from "../components/ui/Label";
@@ -21,85 +21,78 @@ export default function Login() {
 
   const { setAuthState } = useAuthContext();
 
-const handleLogin = async (e) => {
-  e.preventDefault();
+  const handleLogin = async (e) => {
+    e.preventDefault();
 
-  if (loading) return;
+    if (loading) return;
 
-  setError("");
-  setSuccess("");
+    setError("");
+    setSuccess("");
 
-  if (!email || !password) {
-    setError("Please fill in all fields");
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    const res = await axios.post(
-      `${import.meta.env.VITE_API_URL}/hrLogin`,
-      { email, password },
-      { withCredentials: true }
-    );
-
-    const data = res.data;
-
-    console.log("✅ HR LOGIN RESPONSE:", data);
-
-    // ✅ Check success FIRST
-    if (!data.success) {
-      setError(data.message || "Login failed");
+    if (!email || !password) {
+      setError("Please fill in all fields");
       return;
     }
 
-    // ✅ Extract token safely
-    const token =
-      data.token ||
-      data.accessToken ||
-      data.access_token ||
-      data.jwt ||
-      "temp-token"; // fallback (only for testing)
+    setLoading(true);
 
-    // ✅ Build user
-    const userData = {
-      email: data.email || email,
-      name: data.name || "HR Admin",
-      userId: data.userId || null,
-    };
+    try {
+      const res = await api.post("/hrLogin", {
+        email,
+        password,
+      });
 
-    // ✅ Save
-    localStorage.setItem("token", token);
-    localStorage.setItem("userRole", "hr");
-    localStorage.setItem("user", JSON.stringify(userData));
+      const data = res.data;
 
-    // ✅ Sync context
-    setAuthState({
-      isAuthenticated: true,
-      token,
-      userRole: "hr",
-      user: userData,
-      loading: false,
-    });
+      console.log("✅ HR LOGIN RESPONSE:", data);
 
-    setSuccess(data.message || "Login successful");
+      if (!data.success) {
+        setError(data.message || "Login failed");
+        return;
+      }
 
-    // ✅ Navigate immediately (no delay needed)
-    navigate("/dashboard", { replace: true });
+      const token =
+        data.token ||
+        data.accessToken ||
+        data.access_token ||
+        data.jwt ||
+        "temp-token";
 
-  } catch (err) {
-    const message =
-      err.response?.data?.message ||
-      err.response?.data?.error ||
-      (err.request && "Network error. Check server connection.") ||
-      err.message ||
-      "Something went wrong.";
+      const userData = {
+        email: data.email || email,
+        name: data.name || "HR Admin",
+        userId: data.userId || null,
+      };
 
-    setError(message);
-  } finally {
-    setLoading(false);
-  }
-};
+      localStorage.setItem("token", token);
+      localStorage.setItem("userRole", "hr");
+      localStorage.setItem("user", JSON.stringify(userData));
+
+      setAuthState({
+        isAuthenticated: true,
+        token,
+        userRole: "hr",
+        user: userData,
+        loading: false,
+      });
+
+      setSuccess(data.message || "Login successful");
+
+      navigate("/dashboard", { replace: true });
+
+    } catch (err) {
+      const message =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        (err.request && "Network error. Check server connection.") ||
+        err.message ||
+        "Something went wrong.";
+
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="relative min-h-screen bg-slate-950 flex items-center justify-center px-4 overflow-hidden font-sans">

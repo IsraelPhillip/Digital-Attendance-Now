@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../api/axios";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
@@ -9,15 +9,15 @@ import {
   Cpu,
 } from "lucide-react";
 
+
 export default function Security() {
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
-  const API = import.meta.env.VITE_API_URL
 
   useEffect(() => {
     const fetchSecurity = async () => {
       try {
-        const res = await axios.get(`${API}/getAllSecurity`);
+        const res = await api.get("/getAllSecurity");
         console.log("SECURITY DATA:", res.data.data);
         setCards(res.data.data);
       } catch (err) {
@@ -30,32 +30,32 @@ export default function Security() {
     fetchSecurity();
   }, []);
 
- const createNew = async () => {
-  try {
-    const password = `PX-${Math.random()
-      .toString(36)
-      .slice(2, 8)
-      .toUpperCase()}`;
+  const createNew = async () => {
+    try {
+      const password = `PX-${Math.random()
+        .toString(36)
+        .slice(2, 8)
+        .toUpperCase()}`;
 
-    const res = await axios.post(`${API}/createSecurity`, {
-      password,
-    });
-
-    const newSecurity = res.data.data;
-
-    // ✅ Inject password manually into state
-    setCards((prev) => [
-      {
-        ...newSecurity,
+      const res = await api.post("/createSecurity", {
         password,
-      },
-      ...prev,
-    ]);
+      });
 
-  } catch (err) {
-    console.error("Create error:", err.response?.data || err.message);
-  }
-};
+      const newSecurity = res.data.data;
+
+      setCards((prev) => [
+        {
+          ...newSecurity,
+          password,
+        },
+        ...prev,
+      ]);
+
+    } catch (err) {
+      console.error("Create error:", err.response?.data || err.message);
+    }
+  };
+
 
   return (
     <div className="max-w-7xl mx-auto space-y-12 pb-20">

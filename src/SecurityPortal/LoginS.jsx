@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api/axios";
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -38,11 +38,10 @@ const handleSubmit = async (e) => {
   setSuccess("");
 
   try {
-    const { data } = await axios.post(
-      `${import.meta.env.VITE_API_URL}/securityLogin`,
-      { securityId, password },
-      { withCredentials: true }
-    );
+    const { data } = await api.post("/securityLogin", {
+      securityId,
+      password
+    });
 
     // ✅ Password change check (KEEP THIS)
     if (data.changePassword) {

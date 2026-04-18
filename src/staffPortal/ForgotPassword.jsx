@@ -1,4 +1,4 @@
-import axios from "axios"
+import api from "../api/axios";
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -22,8 +22,8 @@ const ForgotPassword = () => {
     e.preventDefault();
 
     try{
-      await axios.post(
-        `${import.meta.env.VITE_API_URL}/forgotPassword`,
+      await api.post(
+        "/forgotPassword",
         { email }
       );
   

@@ -1,4 +1,4 @@
-import axios from "axios";
+import api from "../api/axios";
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -6,7 +6,6 @@ import { QrCode, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import Background from "../assets/login-bg.jpg";
 import { useAuthContext } from "../lib/authContext";
 // ✅ Ensure cookies are always sent
-axios.defaults.withCredentials = true;
 
 
 const fadeUp = {
@@ -41,8 +40,8 @@ const LoginPage = () => {
   setSuccessfulMessage("");
 
   try {
-    const response = await axios.post(
-      `${import.meta.env.VITE_API_URL}/loginStaff`,
+    const response = await api.post(
+      "/loginStaff",
       { email, password }
     );
 

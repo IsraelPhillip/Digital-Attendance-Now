@@ -8,8 +8,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState, useCallback } from "react";
-import axios from "axios";
-
+import api from "../api/axios";
 export default function Attendance() {
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,13 +27,13 @@ export default function Attendance() {
       try {
         setLoading(true);
 
-        const res = await axios.get(`${API}/getAttendance`, {
-          params: {
-            page: pageNumber,
-            limit,
-            search: searchQuery,
-          },
-        });
+       const res = await api.get("/getAttendance", {
+  params: {
+    page: pageNumber,
+    limit,
+    search: searchQuery,
+  },
+});
 
         setAttendanceRecords(res.data.data || []);
         setTotalPages(res.data.totalPages || 1);

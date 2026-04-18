@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import api from "../api/axios";
 import { motion } from "framer-motion";
 import {
   Calendar,
@@ -17,7 +17,6 @@ export default function Reports() {
   const [monthlyData, setMonthlyData] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const token = localStorage.getItem("token");
   const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 
   useEffect(() => {
@@ -25,13 +24,9 @@ export default function Reports() {
       try {
         setLoading(true);
 
-        const config = token
-          ? { headers: { Authorization: `Bearer ${token}` } }
-          : {};
-
         const [weeklyRes, monthlyRes] = await Promise.all([
-          axios.get(`${import.meta.env.VITE_API_URL}/weeklyReport`, config),
-          axios.get(`${import.meta.env.VITE_API_URL}/monthlyReport`, config),
+          api.get("/weeklyReport"),
+          api.get("/monthlyReport"),
         ]);
 
         setWeeklyData(weeklyRes?.data?.data || []);
@@ -45,7 +40,7 @@ export default function Reports() {
     };
 
     fetchReports();
-  }, [token]);
+  }, []);
 
   const weeklyReport = useMemo(() => {
   return (weeklyData || []).map((r) => ({

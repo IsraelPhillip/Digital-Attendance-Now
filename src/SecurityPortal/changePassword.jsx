@@ -1,4 +1,4 @@
-import axios from "axios"
+import api from "../api/axios";
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -36,12 +36,10 @@ const ChangePassword = () => {
       }
     
       try {
-        const { data } = await axios.post(
-          `${import.meta.env.VITE_API_URL}/changePassword`,
-          {
-            securityId,
-            temporaryPassword,
-            newPassword: password,
+        const { data } = await api.post("/changePassword", {
+          securityId,
+          temporaryPassword,
+          newPassword: password,
           }
         );
     
