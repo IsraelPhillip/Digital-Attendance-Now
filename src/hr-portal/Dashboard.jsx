@@ -38,10 +38,10 @@ export default function Dashboard() {
 
  // FETCH DATA
 useEffect(() => {
-  const fetchData = async () => {
-    try {
-      const [staffRes, dailyRes, weeklyRes, rateRes, recentRes] =
-        await Promise.all([
+    const fetchData = async () => {
+      try {
+        // Use Promise.allSettled so one failure doesn't kill the whole dashboard
+        const results = await Promise.allSettled([
           api.get("/allStaffs"),
           api.get("/dailyReports"),
           api.get("/weeklyAttendance"),
@@ -49,74 +49,98 @@ useEffect(() => {
           api.get("/recentClockIns")
         ]);
 
-      setEmployees(staffRes.data.staff || []);
-      setAttendanceRecords(dailyRes.data.attendance || []);
+        // Helper to extract data safely
+        const getData = (index) => (results[index].status === 'fulfilled' ? results[index].value.data : null);
 
-      const daysOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+        // 1. Staff Data
+        const staffData = getData(0);
+        if (staffData) setEmployees(staffData.staff || []);
 
-      setWeeklyData(
-        daysOrder.map((day) => ({
-          day,
-          present: weeklyRes.data.data?.[day] ?? 0
-        }))
-      );
+        // 2. Daily Records
+        const dailyData = getData(1);
+        if (dailyData) setAttendanceRecords(dailyData.attendance || []);
 
-      setAttendanceRate(rateRes.data.attendanceRate || 0);
+        // 3. Weekly Data
+        const weeklyDataRes = getData(2);
+        if (weeklyDataRes) {
+          const daysOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+          setWeeklyData(
+            daysOrder.map((day) => ({
+              day,
+              present: weeklyDataRes.data?.[day] ?? 0
+            }))
+          );
+        }
 
-      setRecentClockIns(
-        (recentRes.data.data || []).map((item, index) => {
-          const date = item.timeIn ? new Date(item.timeIn) : null;
-          const valid = date && !isNaN(date.getTime());
+        // 4. Rate
+        const rateData = getData(3);
+        if (rateData) setAttendanceRate(rateData.attendanceRate || 0);
 
-          const hour = valid
-            ? new Date(
-                date.toLocaleString("en-US", {
-                  timeZone: "Africa/Lagos"
-                })
-              ).getHours()
-            : null;
+        // 5. Recent Clock-ins (with Safari Fix)
+        const recentData = getData(4);
+        if (recentData) {
+          setRecentClockIns(
+            (recentData.data || []).map((item, index) => {
+              // Safari-friendly date replacement (replaces space with T for ISO format)
+              const dateString = item.timeIn?.replace(/\s/, 'T') || "";
+              const date = new Date(dateString);
+              const valid = !isNaN(date.getTime());
 
-          let status = "—";
-          if (hour !== null) {
-            status = hour >= 9 ? "Late" : "Early";
-          }
+              // Get Hour in Lagos Time
+              const hour = valid 
+                ? parseInt(new Intl.DateTimeFormat('en-GB', { 
+                    hour: 'numeric', 
+                    hour12: false, 
+                    timeZone: 'Africa/Lagos' 
+                  }).format(date))
+                : null;
 
-          const formattedTime = valid
-            ? date.toLocaleTimeString("en-NG", {
-                timeZone: "Africa/Lagos",
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true
-              })
-            : "--:--";
+              let status = "—";
+              if (hour !== null) {
+                status = hour >= 9 ? "Late" : "Early";
+              }
 
-          return {
-            employeeId: item.employeeId || item.record || index,
-            employeeName: item.employeeName || item.name || "Unknown",
-            timeIn: formattedTime,
-            status
-          };
-        })
-      );
-    } catch (err) {
-      console.error(err);
-    }
-  };
+              const formattedTime = valid
+                ? date.toLocaleTimeString("en-NG", {
+                    timeZone: "Africa/Lagos",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: true
+                  })
+                : "--:--";
 
-  fetchData();
-}, []);
+              return {
+                employeeId: item.employeeId || item.record || index,
+                employeeName: item.employeeName || item.name || "Unknown",
+                timeIn: formattedTime,
+                status
+              };
+            })
+          );
+        }
+      } catch (err) {
+        console.error("Dashboard Global Error:", err);
+      }
+    };
 
+    fetchData();
+  }, []);
+
+  // Update todayRecords memo to handle the staff object safely
   const todayRecords = useMemo(() => {
     if (!Array.isArray(attendanceRecords)) return [];
 
     return attendanceRecords.map((r) => {
-      const date = new Date(r.timeIn);
+      // Fix for potential Safari Date issue
+      const date = new Date(r.timeIn?.replace(/\s/, 'T'));
       const valid = !isNaN(date.getTime());
 
       const hour = valid
-        ? new Date(
-            date.toLocaleString("en-US", { timeZone: "Africa/Lagos" })
-          ).getHours()
+        ? parseInt(new Intl.DateTimeFormat('en-GB', { 
+            hour: 'numeric', 
+            hour12: false, 
+            timeZone: 'Africa/Lagos' 
+          }).format(date))
         : null;
 
       return {

@@ -9,6 +9,7 @@ import {
 import { motion } from "framer-motion";
 import { useEffect, useState, useCallback } from "react";
 import api from "../api/axios";
+
 export default function Attendance() {
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,26 +21,34 @@ export default function Attendance() {
   const [entries, setEntries] = useState(10);
   const [search, setSearch] = useState("");
 
-  const API = import.meta.env.VITE_API_URL;
+  const [currentDate, setCurrentDate] = useState("");
+
+useEffect(() => {
+  setCurrentDate(new Date().toLocaleDateString(undefined, { 
+    weekday: "short", 
+    month: "short", 
+    day: "numeric" 
+  }));
+}, []);
 
   const fetchAttendance = useCallback(
     async (pageNumber = 1, limit = entries, searchQuery = search) => {
       try {
         setLoading(true);
 
-       const res = await api.get("/getAttendance", {
-  params: {
-    page: pageNumber,
-    limit,
-    search: searchQuery,
-  },
-});
+        const res = await api.get("/getAttendance", {
+          params: {
+            page: pageNumber,
+            limit,
+            search: searchQuery,
+          },
+        });
 
         setAttendanceRecords(res.data.data || []);
         setTotalPages(res.data.totalPages || 1);
         setPage(pageNumber);
       } catch (err) {
-        console.error(err);
+        console.error("Attendance fetch failed:", err);
       } finally {
         setLoading(false);
       }
@@ -131,8 +140,10 @@ export default function Attendance() {
             Monitoring daily employee clock-ins & performance
           </p>
         </div>
-        <div className="px-4 py-2 bg-slate-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2"> <Calendar className="w-3 h-3 text-blue-800 " /> {Date.now() ? new Date().toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", }) : "-- -- ----"} </div>
-      </div>
+<div className="px-4 py-2 bg-slate-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2"> 
+  <Calendar className="w-3 h-3 text-blue-800 " /> 
+{currentDate || "Loading..."}</div> 
+     </div>
 
       {/* Table */}
       <motion.div

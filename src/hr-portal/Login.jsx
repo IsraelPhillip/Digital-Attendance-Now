@@ -21,9 +21,8 @@ export default function Login() {
 
   const { setAuthState } = useAuthContext();
 
-  const handleLogin = async (e) => {
+const handleLogin = async (e) => {
     e.preventDefault();
-
     if (loading) return;
 
     setError("");
@@ -37,6 +36,7 @@ export default function Login() {
     setLoading(true);
 
     try {
+      // Using your 'api' instance is perfect here
       const res = await api.post("/hrLogin", {
         email,
         password,
@@ -44,31 +44,36 @@ export default function Login() {
 
       const data = res.data;
 
-      console.log("✅ HR LOGIN RESPONSE:", data);
-
       if (!data.success) {
         setError(data.message || "Login failed");
+        setLoading(false); // Ensure loading is off on logic failure
         return;
       }
 
-      const token =
-        data.token ||
-        data.accessToken ||
-        data.access_token ||
-        data.jwt ||
-        "temp-token";
+      // 1. Identify Token
+      const token = data.token || data.accessToken || data.access_token || data.jwt;
 
+      if (!token) {
+        setError("Authentication token missing from server.");
+        setLoading(false);
+        return;
+      }
+
+      // 2. Prepare User Data
       const userData = {
         email: data.email || email,
         name: data.name || "HR Admin",
         userId: data.userId || null,
       };
 
+      // 3. PERSISTENCE 
+      // Set these BEFORE updating state to ensure the Auth Guard doesn't kick you out
       localStorage.setItem("token", token);
       localStorage.setItem("userRole", "hr");
       localStorage.setItem("user", JSON.stringify(userData));
 
-      setAuthState({
+      // 4. Update Global State
+      await setAuthState({
         isAuthenticated: true,
         token,
         userRole: "hr",
@@ -76,18 +81,19 @@ export default function Login() {
         loading: false,
       });
 
-      setSuccess(data.message || "Login successful");
+      setSuccess("Login successful. Redirecting...");
 
-      navigate("/dashboard", { replace: true });
+      // 5. Navigate (using replace to prevent "back" button returning to login)
+      setTimeout(() => {
+        navigate("/dashboard", { replace: true });
+      }, 100);
 
     } catch (err) {
+      console.error("Login Error:", err);
       const message =
         err.response?.data?.message ||
         err.response?.data?.error ||
-        (err.request && "Network error. Check server connection.") ||
-        err.message ||
-        "Something went wrong.";
-
+        "Network error. Please check your connection.";
       setError(message);
     } finally {
       setLoading(false);

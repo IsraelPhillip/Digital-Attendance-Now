@@ -14,6 +14,11 @@ export default function Security() {
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const copyToClipboard = (text) => {
+  navigator.clipboard.writeText(text);
+  toast.success("Hash copied to terminal");
+};
+
   useEffect(() => {
     const fetchSecurity = async () => {
       try {
@@ -40,6 +45,8 @@ export default function Security() {
       const res = await api.post("/createSecurity", {
         password,
       });
+
+      
 
       const newSecurity = res.data.data;
 
@@ -148,7 +155,8 @@ export default function Security() {
                   </div>
 
                   <div className="pt-2">
-                    <div className="flex justify-between items-center mb-2">
+                    <div className="flex justify-between items-center mb-2 cursor-pointer active:scale-95 transition-transform"
+                    onClick={() => copyToClipboard(card.password)}>
                       <span className="text-[9px] uppercase font-black text-slate-400 tracking-widest">
                         Hash Sequence
                       </span>

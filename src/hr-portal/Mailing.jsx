@@ -149,98 +149,54 @@ export default function Mailing() {
     setShowBulkConfirm(true);
   };
 
-  const confirmAndSend = async () => {
-  try {
-    setLoading(true);
+ const confirmAndSend = async () => {
+    try {
+      setLoading(true);
+      let endpoint = "";
+      let payload = { subject, message };
 
-    if (isBulkMode) {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/personalizedMail`, {
+      // Determine Endpoint and Payload based on mode
+      if (isBulkMode) {
+        endpoint = "/personalizedMail";
+      } else if (isMultiSelectMode) {
+        endpoint = "/mailToMultipleStaffs";
+        payload.staffIds = Array.from(selectedMultiple); // Backend usually handles string or num arrays
+      } else {
+        endpoint = "/mailToStaff";
+        payload.staffId = selectedEmployee.id;
+      }
+
+      const res = await fetch(`${import.meta.env.VITE_API_URL}${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          subject,
-          message,
-        }),
+        body: JSON.stringify(payload),
       });
 
-      let data;
-      try {
-        data = await res.json();
-      } catch {
-        throw new Error("Invalid server response");
-      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to send mail");
 
-      if (!res.ok) throw new Error(data.message);
+      toast.success(data.message || "Action completed successfully");
 
-      toast.success(data.message || "Mail sent to all staff");
+      // Unified Reset
+      setSubject("");
+      setMessage("");
+      setSelectedEmployee(null);
+      setSelectedMultiple(new Set());
+      setSelectAll(false);
+      setIsMultiSelectMode(false);
+      setIsBulkMode(false);
+      setQuery("");
+      setShowDropdown(false);
+      setShowBulkConfirm(false);
 
-    } else if (isMultiSelectMode) {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/mailToMultipleStaffs`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          staffIds: Array.from(selectedMultiple).map(Number), // ✅ FIXED
-          subject,
-          message,
-        }),
-      });
-
-      let data;
-      try {
-        data = await res.json();
-      } catch {
-        throw new Error("Invalid server response");
-      }
-
-      if (!res.ok) throw new Error(data.message);
-
-      toast.success(data.message || `Mail sent to ${selectedMultiple.size} staff`);
-
-    } else {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/mailToStaff`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          staffId: Number(selectedEmployee.id), // ✅ FIXED
-          subject,
-          message,
-        }),
-      });
-
-      let data;
-      try {
-        data = await res.json();
-      } catch {
-        throw new Error("Invalid server response");
-      }
-
-      if (!res.ok) throw new Error(data.message);
-
-      toast.success(data.message || "Mail sent successfully");
+    } catch (error) {
+      console.error("SEND ERROR:", error);
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
     }
-
-    // reset
-    setSubject("");
-    setMessage("");
-    setSelectedEmployee(null);
-    setSelectedMultiple(new Set());
-    setSelectAll(false);
-    setIsMultiSelectMode(false);
-    setIsBulkMode(false);
-    setQuery("");
-    setShowDropdown(false);
-    setShowBulkConfirm(false);
-
-  } catch (error) {
-    console.error("SEND ERROR:", error);
-    toast.error(error.message);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleSend = () => {
     if (isBulkMode) handleBulkSend();

@@ -82,7 +82,8 @@ const currentWeek = getWeekNumber();
       body: weeklyReport.map((r) => [r.name,  ...r.days, `${r.rate}%`]),
     });
 
-    doc.save("weekly-report.pdf");
+    const pdfData = doc.output('bloburl');
+window.open(pdfData, '_blank');
     toast.success("Weekly report downloaded");
   };
 
