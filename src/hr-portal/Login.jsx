@@ -9,8 +9,6 @@ import { Label } from "../components/ui/Label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { useAuthContext } from "../lib/authContext";
 
-
-
 export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -21,7 +19,7 @@ export default function Login() {
 
   const { setAuthState } = useAuthContext();
 
-const handleLogin = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     if (loading) return;
 
@@ -36,24 +34,28 @@ const handleLogin = async (e) => {
     setLoading(true);
 
     try {
-      // Using your 'api' instance is perfect here
       const res = await api.post("/hrLogin", {
         email,
         password,
       });
 
+      // DEBUG: This will show you exactly what the server sent in the console
+      console.log("LOGIN RESPONSE:", res.data);
+
       const data = res.data;
 
-      if (!data.success) {
+      // Check if the request was successful based on your backend structure
+      if (data.success === false) {
         setError(data.message || "Login failed");
-        setLoading(false); // Ensure loading is off on logic failure
+        setLoading(false);
         return;
       }
 
-      // 1. Identify Token
-      const token = data.token || data.accessToken || data.access_token || data.jwt;
+      // 1. Identify Token (Expanded search to find nested tokens)
+      const token = data.token || data.accessToken || data.data?.token || data.access_token || data.jwt;
 
       if (!token) {
+        console.error("Token Search Failed. Data received:", data);
         setError("Authentication token missing from server.");
         setLoading(false);
         return;
@@ -61,13 +63,12 @@ const handleLogin = async (e) => {
 
       // 2. Prepare User Data
       const userData = {
-        email: data.email || email,
-        name: data.name || "HR Admin",
-        userId: data.userId || null,
+        email: data.user?.email || data.email || email,
+        name: data.user?.name || data.name || "HR Admin",
+        userId: data.user?.id || data.userId || null,
       };
 
       // 3. PERSISTENCE 
-      // Set these BEFORE updating state to ensure the Auth Guard doesn't kick you out
       localStorage.setItem("token", token);
       localStorage.setItem("userRole", "hr");
       localStorage.setItem("user", JSON.stringify(userData));
@@ -83,13 +84,13 @@ const handleLogin = async (e) => {
 
       setSuccess("Login successful. Redirecting...");
 
-      // 5. Navigate (using replace to prevent "back" button returning to login)
+      // 5. Navigate
       setTimeout(() => {
         navigate("/dashboard", { replace: true });
-      }, 100);
+      }, 500);
 
     } catch (err) {
-      console.error("Login Error:", err);
+      console.error("Login Error Details:", err);
       const message =
         err.response?.data?.message ||
         err.response?.data?.error ||
@@ -105,7 +106,8 @@ const handleLogin = async (e) => {
       <div className="absolute inset-0 z-0">
         <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px]" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/10 rounded-full blur-[120px]" />
-<div className="absolute inset-0 bg-[radial-gradient(circle,#ffffff0f_1px,transparent_1px)] [background-size:20px_20px]" />      </div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle,#ffffff0f_1px,transparent_1px)] [background-size:20px_20px]" />
+      </div>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -123,7 +125,6 @@ const handleLogin = async (e) => {
               <QrCode className="w-7 h-7 text-white" />
             </motion.div>
           </Link>
-
           <p className="text-slate-400 text-sm mt-1">Authorized Personnel Only</p>
         </div>
 
@@ -132,23 +133,14 @@ const handleLogin = async (e) => {
             <div className="mx-auto w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center mb-2">
               <ShieldCheck className="w-5 h-5 text-blue-400" />
             </div>
-
-            <CardTitle className="text-xl font-bold text-white">
-              Admin Login
-            </CardTitle>
-
-            <CardDescription className="text-slate-400">
-              Enter your secure credentials to continue
-            </CardDescription>
+            <CardTitle className="text-xl font-bold text-white">Admin Login</CardTitle>
+            <CardDescription className="text-slate-400">Enter your secure credentials to continue</CardDescription>
           </CardHeader>
 
           <CardContent className="pb-8">
             <form onSubmit={handleLogin} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-slate-300 ml-1">
-                  Work Email
-                </Label>
-
+                <Label htmlFor="email" className="text-slate-300 ml-1">Work Email</Label>
                 <div className="relative group">
                   <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
                   <Input
@@ -163,12 +155,7 @@ const handleLogin = async (e) => {
               </div>
 
               <div className="space-y-2">
-                <div className="flex items-center justify-between ml-1">
-                  <Label htmlFor="password" className="text-slate-300">
-                    Password
-                  </Label>
-                </div>
-
+                <Label htmlFor="password" className="text-slate-300 ml-1">Password</Label>
                 <div className="relative group">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
                   <Input
@@ -181,10 +168,6 @@ const handleLogin = async (e) => {
                   />
                 </div>
               </div>
-
-              <button type="button" className="text-xs text-blue-400 hover:underline">
-                Forgot Password?
-              </button>
 
               {error && (
                 <p className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
@@ -205,15 +188,8 @@ const handleLogin = async (e) => {
               >
                 <AnimatePresence mode="wait">
                   {loading ? (
-                    <motion.div
-                      key="loader"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="flex items-center gap-2"
-                    >
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Verifying...
+                    <motion.div key="loader" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" /> Verifying...
                     </motion.div>
                   ) : (
                     <motion.span key="text">Sign In</motion.span>
@@ -223,10 +199,7 @@ const handleLogin = async (e) => {
             </form>
 
             <div className="mt-8 pt-6 border-t border-white/5 text-center">
-              <Link
-                to="/landingHr"
-                className="text-xs font-medium text-slate-500 hover:text-blue-400 transition-colors inline-flex items-center gap-2 tracking-widest uppercase"
-              >
+              <Link to="/landingHr" className="text-xs font-medium text-slate-500 hover:text-blue-400 transition-colors inline-flex items-center gap-2 tracking-widest uppercase">
                 <ArrowLeft className="w-3 h-3" /> Back Home
               </Link>
             </div>
