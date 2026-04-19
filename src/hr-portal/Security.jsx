@@ -8,25 +8,29 @@ import {
   Lock,
   Cpu,
 } from "lucide-react";
-
+import { toast } from "sonner"; // Fixed missing import
 
 export default function Security() {
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const copyToClipboard = (text) => {
-  navigator.clipboard.writeText(text);
-  toast.success("Hash copied to terminal");
-};
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    toast.success("Hash copied to terminal");
+  };
 
   useEffect(() => {
     const fetchSecurity = async () => {
       try {
+        setLoading(true);
         const res = await api.get("/getAllSecurity");
-        console.log("SECURITY DATA:", res.data.data);
-        setCards(res.data.data);
+        // Safeguard: Ensure we are setting an array
+        const fetchedData = res.data?.data || [];
+        setCards(Array.isArray(fetchedData) ? fetchedData : []);
       } catch (err) {
         console.error("Fetch error:", err.response?.data || err.message);
+        setCards([]); // Prevent crash on error
       } finally {
         setLoading(false);
       }
@@ -46,29 +50,37 @@ export default function Security() {
         password,
       });
 
-      
+      const newSecurity = res.data?.data;
 
-      const newSecurity = res.data.data;
-
-      setCards((prev) => [
-        {
-          ...newSecurity,
-          password,
-        },
-        ...prev,
-      ]);
-
+      if (newSecurity) {
+        setCards((prev) => [
+          {
+            ...newSecurity,
+            password,
+          },
+          ...prev,
+        ]);
+        toast.success("New Security Node Initialized");
+      }
     } catch (err) {
       console.error("Create error:", err.response?.data || err.message);
+      toast.error("Protocol Initialization Failed");
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-slate-500 font-black uppercase tracking-widest">
+        Decrypting System...
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-12 pb-20">
       {/* --- Cyber Header --- */}
       <div className="relative group overflow-hidden bg-slate-900 rounded-[2.5rem] p-8 md:p-12 border border-slate-800 shadow-2xl">
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
+        <div className="absolute inset-0 bg-slate-900 opacity-20 mix-blend-overlay"></div>
         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 rounded-full blur-[100px] -mr-48 -mt-48 animate-pulse"></div>
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
@@ -110,7 +122,7 @@ export default function Security() {
         <AnimatePresence mode="popLayout">
           {cards.map((card, i) => (
             <motion.div
-              key={card.securityId}
+              key={card.securityId || i}
               layout
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -125,7 +137,7 @@ export default function Security() {
             >
               <div className="absolute -inset-0.5 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-[2rem] blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
 
-              <div className="relative bg-white rounded-[2rem] border border-slate-200 p-7 shadow-sm group-hover:shadow-xl group-hover:-translate-y-2 transition-all duration-300">
+              <div className="relative bg-white rounded-[2rem] border border-slate-200 p-7 shadow-sm group-hover:shadow-xl md:group-hover:-translate-y-2 transition-all duration-300">
                 <div className="flex justify-between items-start mb-8">
                   <div className="p-3 bg-slate-900 rounded-2xl group-hover:bg-blue-600 transition-colors duration-500">
                     <Cpu className="w-6 h-6 text-white" />
@@ -140,7 +152,7 @@ export default function Security() {
                         Security ID
                       </span>
                       <p className="text-xs font-mono font-bold text-blue-600">
-                        {card.securityId}
+                        {card.securityId || "N/A"}
                       </p>
                     </div>
 
@@ -149,21 +161,26 @@ export default function Security() {
                         Created
                       </span>
                       <p className="text-xs font-bold text-slate-600">
-                        {new Date(card.createdAt).toLocaleDateString()}
+                        {card.createdAt ? new Date(card.createdAt).toLocaleDateString() : "Pending"}
                       </p>
                     </div>
                   </div>
 
                   <div className="pt-2">
-                    <div className="flex justify-between items-center mb-2 cursor-pointer active:scale-95 transition-transform"
-                    onClick={() => copyToClipboard(card.password)}>
+                    <div 
+                      className="flex justify-between items-center mb-2 cursor-pointer active:scale-95 transition-transform"
+                      onClick={() => copyToClipboard(card.password)}
+                    >
                       <span className="text-[9px] uppercase font-black text-slate-400 tracking-widest">
                         Hash Sequence
                       </span>
                       <Fingerprint className="w-3 h-3 text-slate-300" />
                     </div>
 
-                    <div className="bg-slate-900 rounded-xl p-3 font-mono text-[11px] text-center text-blue-400 border border-slate-800 shadow-inner group-hover:border-blue-500/30 transition-colors">
+                    <div 
+                      onClick={() => copyToClipboard(card.password)}
+                      className="bg-slate-900 rounded-xl p-3 font-mono text-[11px] text-center text-blue-400 border border-slate-800 shadow-inner group-hover:border-blue-500/30 transition-colors cursor-pointer"
+                    >
                       {card.password || "••••••••••••••••"}
                     </div>
                   </div>
