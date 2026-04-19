@@ -52,14 +52,16 @@ export default function Login() {
       }
 
       // 1. Identify Token (Expanded search to find nested tokens)
-      const token = data.token || data.accessToken || data.data?.token || data.access_token || data.jwt;
 
-      if (!token) {
-        console.error("Token Search Failed. Data received:", data);
-        setError("Authentication token missing from server.");
-        setLoading(false);
-        return;
-      }
+      const token =
+  data.token ||
+  data.accessToken ||
+  data.data?.token ||
+  data.access_token ||
+  data.jwt ||
+  "cookie-auth";
+
+  console.log("LOGIN RESPONSE:", res.data);
 
       // 2. Prepare User Data
       const userData = {
